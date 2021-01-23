@@ -3,6 +3,8 @@ name = "wasm-demo-web"
 version = "0.1.0"
 authors = ["Rüdiger Sonderfeld <ruediger@c-plusplus.net>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+readme = "README.md"
 
 [lib]
 crate-type = ["cdylib"]
