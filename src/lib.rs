@@ -42,7 +42,7 @@ pub fn main() -> Result<(), JsValue> {
     }) as Box<dyn Fn()>);
     image.set_onload(Some(draw_image.as_ref().unchecked_ref()));
     draw_image.forget();
-    image.set_src("example128.jpg");
+    image.set_src("webdata/example128.jpg");
 
     let context2 = context.clone();
     let mousedown = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
