@@ -60,5 +60,18 @@
     <div id="canvas-div" style="max-height: 256px;max-width:256px;overflow: auto;">
       <canvas id="canvas" width="1024" height="768" ></canvas>
     </div>
+
+    <div id="chat">
+      <div id="registration">
+        <label for="name">Name: </label> <input type="text" id="name" />
+        <input type="button" id="connect" value="Connect" />
+      </div>
+      <div id="live" style="display: none;">
+        <textarea id="chatmessages">
+          Disconnected
+        </textarea><br>
+        <input type="text" id="message" /><input type="button" id="send" value="Send" />
+      </div>
+    </div>
   </body>
 </html>

@@ -10,19 +10,35 @@ readme = "README.md"
 crate-type = ["cdylib"]
 
 [dependencies]
-wasm-bindgen = "0.2.69"
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+wasm-bindgen-futures = "0.4"
+console_error_panic_hook = "0.1"
+futures = { version = "0.3", default-features = false }
+js-sys = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_derive = "^1.0.59"
+serde_json = "^1.0.59"
 
 [dependencies.web-sys]
-version = "0.3.4"
+version = "0.3.57"
 features = [
   'CanvasRenderingContext2d',
   'console',
+  'CssStyleDeclaration',
   'Document',
   'Element',
   'MouseEvent',
+  'Headers',
   'HtmlCanvasElement',
+  'HtmlDivElement',
   'HtmlImageElement',
+  'HtmlInputElement',
   'HtmlElement',
+  'HtmlTextAreaElement',
   'Node',
+  'Request',
+  'RequestInit',
+  'RequestMode',
+  'Response',
   'Window',
 ]
