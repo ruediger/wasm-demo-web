@@ -93,7 +93,7 @@ async fn client_connected(socket: warp::ws::WebSocket, id: Uuid, clients: Client
     while let Some(result) = ws_rx.next().await {
         let msg = match result {
             Ok(msg) => {
-                println!("Message: {:#?}", msg);
+                println!("Message({:#?}): {:#?}", id, msg);
                 msg
             },
             Err(e) => {
