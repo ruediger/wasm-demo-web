@@ -119,22 +119,6 @@ pub fn chat_init() -> Result<(), JsValue> {
         .dyn_into::<web_sys::HtmlDivElement>()
         .expect("div element `live`");
 
-    let chatmessages_area = document.get_element_by_id("chatmessages").expect(
-        "should have `chatmessages` textarea element");
-    let chatmessages_area: web_sys::HtmlTextAreaElement = chatmessages_area
-        .dyn_into::<web_sys::HtmlTextAreaElement>()
-        .expect("textarea element `chatmessages`");
-
-    let message_input = document.get_element_by_id("message").expect("should have `message` input element");
-    let message_input: web_sys::HtmlInputElement = message_input
-        .dyn_into::<web_sys::HtmlInputElement>()
-        .expect("input element `message`");
-
-    let send_button = document.get_element_by_id("send").expect("should have `send` input element");
-    let send_button: web_sys::HtmlInputElement = send_button
-        .dyn_into::<web_sys::HtmlInputElement>()
-        .expect("input element `send`");
-
     let connect_action = Closure::wrap(Box::new(move || {
         console::log_2(&"Action action action: ".into(), &name_input.value().into());
 
@@ -212,13 +196,14 @@ pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
     // For small binary messages, like CBOR, Arraybuffer is more efficient than Blob handling
     ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
 
-    let cloned_ws = ws.clone();
+    let cloned_chatmessages_area = chatmessages_area.clone();
     let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
         if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
             console::log_2(&"message event, received Text: ".into(), &txt);
-            let t = chatmessages_area.inner_text();
-            let t = String::from(t) + &String::from(txt);
-            chatmessages_area.set_inner_text(&t);
+            let t = cloned_chatmessages_area.value();
+            console::log_2(&"Content: ".into(), &t.clone().into());
+            let t = String::from(t) + &"\n" + &String::from(txt);
+            cloned_chatmessages_area.set_value(&t);
         } else {
             console::log_2(&"message event, received Unknown: ".into(), &e.data());
         }
@@ -233,8 +218,10 @@ pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
     onerror_callback.forget();
 
     let cloned_ws = ws.clone();
+    let cloned_chatmessages_area = chatmessages_area.clone();
     let onopen_callback = Closure::wrap(Box::new(move |_| {
         console::log_1(&"socket opened".into());
+        cloned_chatmessages_area.set_value(&"<Connected!>");
         match cloned_ws.send_with_str("ping") {
             Ok(_) => console::log_1(&"message successfully sent".into()),
             Err(err) => console::log_2(&"error sending message: {:?}".into(), &err),
@@ -242,6 +229,8 @@ pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
     }) as Box<dyn FnMut(JsValue)>);
     ws.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
     onopen_callback.forget();
+
+    let cloned_chatmessages_area = chatmessages_area.clone();
 
     let message_input = document.get_element_by_id("message").expect("should have `message` input element");
     let message_input: web_sys::HtmlInputElement = message_input
@@ -261,6 +250,8 @@ pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
         match cloned_ws.send_with_str(&text) {
             Ok(_) => {
                 message_input.set_value("");  // clear input
+                let t = String::from(cloned_chatmessages_area.value()) + &"\n<YOU> " + &String::from(text);
+                cloned_chatmessages_area.set_value(&t);
                 console::log_1(&"message successfully sent".into())
             },
             Err(err) => console::log_2(&"error sending message: {:?}".into(), &err),
