@@ -243,5 +243,31 @@ pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
     ws.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
     onopen_callback.forget();
 
+    let message_input = document.get_element_by_id("message").expect("should have `message` input element");
+    let message_input: web_sys::HtmlInputElement = message_input
+        .dyn_into::<web_sys::HtmlInputElement>()
+        .expect("input element `message`");
+
+    let send_button = document.get_element_by_id("send").expect("should have `send` input element");
+    let send_button: web_sys::HtmlInputElement = send_button
+        .dyn_into::<web_sys::HtmlInputElement>()
+        .expect("input element `send`");
+
+    let cloned_ws = ws.clone();
+    let send_action = Closure::wrap(Box::new(move || {
+        let text = message_input.value();
+        console::log_2(&"Sending message: ".into(), &text.clone().into());
+
+        match cloned_ws.send_with_str(&text) {
+            Ok(_) => {
+                message_input.set_value("");  // clear input
+                console::log_1(&"message successfully sent".into())
+            },
+            Err(err) => console::log_2(&"error sending message: {:?}".into(), &err),
+        }
+    }) as Box<dyn Fn()>);
+    send_button.set_onclick(Some(send_action.as_ref().unchecked_ref()));
+    send_action.forget();
+
     Ok(())
 }
