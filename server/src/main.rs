@@ -66,6 +66,7 @@ async fn broadcast_message(id: &Uuid, msg: warp::ws::Message, clients: &Clients)
 }
 
 async fn client_connected(socket: warp::ws::WebSocket, id: Uuid, clients: Clients) {
+    println!("client connected");
     let (ws_tx, mut ws_rx) = socket.split();
 
     let (tx, rx) = mpsc::unbounded_channel();
@@ -91,7 +92,10 @@ async fn client_connected(socket: warp::ws::WebSocket, id: Uuid, clients: Client
     // all other users...
     while let Some(result) = ws_rx.next().await {
         let msg = match result {
-            Ok(msg) => msg,
+            Ok(msg) => {
+                println!("Message: {:#?}", msg);
+                msg
+            },
             Err(e) => {
                 eprintln!("websocket error(uid={}): {}", id, e);
                 break;

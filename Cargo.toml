@@ -2,7 +2,7 @@
 name = "wasm-demo-web"
 version = "0.1.0"
 authors = ["Rüdiger Sonderfeld <ruediger@c-plusplus.net>"]
-edition = "2018"
+edition = "2021"
 license = "MIT/Apache-2.0"
 readme = "README.md"
 
@@ -22,11 +22,14 @@ serde_json = "^1.0.59"
 [dependencies.web-sys]
 version = "0.3.57"
 features = [
+  'BinaryType',
   'CanvasRenderingContext2d',
   'console',
   'CssStyleDeclaration',
   'Document',
   'Element',
+  'ErrorEvent',
+  'MessageEvent',
   'MouseEvent',
   'Headers',
   'HtmlCanvasElement',
@@ -40,5 +43,6 @@ features = [
   'RequestInit',
   'RequestMode',
   'Response',
+  'WebSocket',
   'Window',
 ]

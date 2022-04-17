@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::console;
-use web_sys::{Headers, Request, RequestInit, RequestMode, Response};
+use web_sys::{ErrorEvent, MessageEvent, Request, RequestInit, RequestMode, Response};
 
 // Called when the wasm module is instantiated
 #[wasm_bindgen(start)]
@@ -145,9 +145,16 @@ pub fn chat_init() -> Result<(), JsValue> {
 
         let fut = register_chat(name_input.value())
             .map_ok(|uuid: String| {
-                console::log_2(&"UUID: ".into(), &JsValue::from(uuid));
+                console::log_2(&"UUID: ".into(), &JsValue::from(&uuid));
+                uuid
             });
-        wasm_bindgen_futures::spawn_local(async { fut.await; });
+        wasm_bindgen_futures::spawn_local(async move {
+            match fut.await {
+                Err(e) => console::log_2(&"Failed to register: ".into(), &e),
+                Ok(uuid) => { connect_chat(uuid); },
+            };
+        });
+
 
         live_div.style().set_property("display", "block").expect("display block of live div failed");
         registration_div.style().set_property("display", "none").expect("display none of registration div failed");
@@ -168,9 +175,6 @@ pub fn register_chat(name: String) -> impl futures::Future<Output = std::result:
     let register_request = RegisterRequest {
         name: name,
     };
-    // let register_request = JsValue::from_serde(&register_request).expect(
-    //     "failed conversion from RegisterRequest to JSON");
-    // opts.body(Some(&register_request));
     let register_request = serde_json::to_string(&register_request).expect("failed conversion from RegisterRequest to JSON");
     let register_request = JsValue::from(register_request);
     opts.body(Some(&register_request));
@@ -191,4 +195,53 @@ pub fn register_chat(name: String) -> impl futures::Future<Output = std::result:
             "expected RegisterResponse response type");
         register_response.uuid
     })
+}
+
+pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
+    let window = web_sys::window().expect("no global `window` exists");
+    let document = window.document().expect("should have a document on window");
+
+    let chatmessages_area = document.get_element_by_id("chatmessages").expect(
+        "should have `chatmessages` textarea element");
+    let chatmessages_area: web_sys::HtmlTextAreaElement = chatmessages_area
+        .dyn_into::<web_sys::HtmlTextAreaElement>()
+        .expect("textarea element `chatmessages`");
+
+    let ws = web_sys::WebSocket::new(&format!("ws://localhost:3030/chat/{}", uuid).as_str())?;
+
+    // For small binary messages, like CBOR, Arraybuffer is more efficient than Blob handling
+    ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
+
+    let cloned_ws = ws.clone();
+    let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
+        if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
+            console::log_2(&"message event, received Text: ".into(), &txt);
+            let t = chatmessages_area.inner_text();
+            let t = String::from(t) + &String::from(txt);
+            chatmessages_area.set_inner_text(&t);
+        } else {
+            console::log_2(&"message event, received Unknown: ".into(), &e.data());
+        }
+    }) as Box<dyn FnMut(MessageEvent)>);
+    ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
+    onmessage_callback.forget();
+
+    let onerror_callback = Closure::wrap(Box::new(move |e: ErrorEvent| {
+        console::log_2(&"error event: ".into(), &e);
+    }) as Box<dyn FnMut(ErrorEvent)>);
+    ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
+    onerror_callback.forget();
+
+    let cloned_ws = ws.clone();
+    let onopen_callback = Closure::wrap(Box::new(move |_| {
+        console::log_1(&"socket opened".into());
+        match cloned_ws.send_with_str("ping") {
+            Ok(_) => console::log_1(&"message successfully sent".into()),
+            Err(err) => console::log_2(&"error sending message: {:?}".into(), &err),
+        }
+    }) as Box<dyn FnMut(JsValue)>);
+    ws.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
+    onopen_callback.forget();
+
+    Ok(())
 }
