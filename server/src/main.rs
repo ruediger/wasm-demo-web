@@ -134,7 +134,8 @@ async fn main() {
     let clients = Clients::default();
     let registration = warp::post()
         .and(warp::path("register"))
-        .and(warp::body::json())  // TODO: add content_length_limit
+        .and(warp::body::content_length_limit(100))
+        .and(warp::body::json())
         .and(with_clients(clients.clone()))
         .and_then(register_client);
     let chat = warp::get()
