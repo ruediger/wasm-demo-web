@@ -135,7 +135,11 @@ pub fn chat_init() -> Result<(), JsValue> {
         wasm_bindgen_futures::spawn_local(async move {
             match fut.await {
                 Err(e) => console::log_2(&"Failed to register: ".into(), &e),
-                Ok(uuid) => { connect_chat(uuid); },
+                Ok(uuid) => {
+                    if let Err(e) = connect_chat(uuid) {
+                        console::log_2(&"Failed to connect chat: ".into(), &e)
+                    }
+                },
             };
         });
 
