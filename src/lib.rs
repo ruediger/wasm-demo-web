@@ -185,6 +185,16 @@ pub fn register_chat(name: String) -> impl futures::Future<Output = std::result:
     })
 }
 
+// TODO: have structs in common lib for server+client!
+#[derive(Deserialize)]
+struct TextMessage {
+    message: String,  // Message content
+    sender: String,  // Sender name
+    time: u64, // Time in seconds since UNIX epoch
+    uuid: String,  // Message uuid
+}
+
+
 pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
     let window = web_sys::window().expect("no global `window` exists");
     let document = window.document().expect("should have a document on window");
@@ -203,10 +213,16 @@ pub fn connect_chat(uuid: String) -> std::result::Result<(), JsValue> {
     let cloned_chatmessages_area = chatmessages_area.clone();
     let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
         if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
-            console::log_2(&"message event, received Text: ".into(), &txt);
+            console::log_2(&"message event, received JSON: ".into(), &txt);
+            let msg = serde_json::from_str(&String::from(&txt));
+            if msg.is_err() {
+                console::log_1(&"Decoding JSON message failed: ".into());
+                return;
+            }
+            let msg : TextMessage = msg.unwrap();
             let t = cloned_chatmessages_area.value();
             console::log_2(&"Content: ".into(), &t.clone().into());
-            let t = String::from(t) + &"\n" + &String::from(txt);
+            let t = String::from(t) + &"\n" + &String::from(msg.message);
             cloned_chatmessages_area.set_value(&t);
         } else {
             console::log_2(&"message event, received Unknown: ".into(), &e.data());

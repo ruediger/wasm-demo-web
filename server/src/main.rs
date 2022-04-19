@@ -40,6 +40,17 @@ async fn register_client(rreq: RegisterRequest, clients: Clients) -> std::result
     Ok(warp::reply::json(&RegisterResponse { uuid }))
 }
 
+
+
+#[derive(Deserialize, Serialize, Debug)]
+struct TextMessage {
+    message: String,  // Message content
+    sender: String,  // Sender name
+    time: u64, // Time in seconds since UNIX epoch
+    uuid: Uuid,  // Message uuid
+}
+
+
 async fn broadcast_message(id: &Uuid, msg: warp::ws::Message, clients: &Clients) {
     let msg_txt = match msg.to_str() {
         Ok(m) => m,
@@ -52,12 +63,32 @@ async fn broadcast_message(id: &Uuid, msg: warp::ws::Message, clients: &Clients)
         return;
     }
     let client = client.unwrap();
-    let msg_txt = format!("<{}> {}", client.name, msg_txt);
+    let msg_txt = format!("<{}> {}", &client.name, msg_txt);
+
+    let time = match std::time::SystemTime::now().duration_since(std::time::SystemTime::UNIX_EPOCH) {
+        Ok(d) => d.as_secs(),
+        Err(_) => 0,
+    };
+
+    let msg = TextMessage {
+        message: msg_txt.clone(),
+        sender: client.name.clone(),
+        time: time,
+        uuid: Uuid::new_v4(),
+    };
+    let msg_json_txt = match serde_json::to_string(&msg) {
+        Ok(txt) => txt,
+        Err(e) => {
+            eprintln!("JSON conversion failed: {:#?}", e);
+            String::from("")
+        },
+    };
+    println!("Json (\n{}\n)", &msg_json_txt);
 
     for (&uid, client) in clients.read().await.iter() {
         if uid != *id {
             if let Some(sender) = &client.sender {
-                if let Err(_) = sender.send(Ok(warp::ws::Message::text(msg_txt.clone()))) {
+                if let Err(_) = sender.send(Ok(warp::ws::Message::text(msg_json_txt.clone()))) {
                     // disconnect should be handled in client_connected.  Just ignore here.
                 }
             }
