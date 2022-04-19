@@ -1,6 +1,10 @@
 Just some playing around with canvas, wasm/web_sys, websockets, and warp.
 
-- `server/` implements an http and websocket server using warp.
+- `server/` implements an http and websocket server using warp.  Based
+  off of
+  https://blog.logrocket.com/how-to-build-a-websocket-server-with-rust/.
+- The main directory contains a wasm project that plays around with
+  canvas and sets up a simple websocket chat.
 
 Based off of https://github.com/rustwasm/wasm-bindgen examples.
 
